@@ -42,7 +42,7 @@ namespace FlexFlow.Api
                 // Use SQLite for the database.
                 string sqliteDbName = "FlexFlow.db";
 
-                _logger.LogInformation($"Setting SQLite to use the database {sqliteDbName}...");
+                _logger.LogInformation("Setting SQLite to use the database {DbName}...", sqliteDbName);
                 options.UseSqlite($"Filename={sqliteDbName}");
             });
             _logger.LogInformation("Database configured.");
@@ -151,11 +151,11 @@ namespace FlexFlow.Api
 
                 if (result.Succeeded)
                 {
-                    _logger.LogInformation($"Administrator user created successfully.");
+                    _logger.LogInformation("Administrator user created successfully.");
                 }
                 else
                 {
-                    _logger.LogError($"Could not create the Administrator user. Reason: {result}");
+                    _logger.LogError("Could not create the Administrator user. Reason: {Reason}", result);
                 }
             }
             else

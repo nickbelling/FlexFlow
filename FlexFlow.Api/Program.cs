@@ -19,6 +19,7 @@ namespace FlexFlow.Api
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
                 .Enrich.FromLogContext()
                 .WriteTo.Console()
+                .WriteTo.File("flexflow.log", rollingInterval: RollingInterval.Day)
                 .CreateLogger();
 
             // Start
