@@ -1,6 +1,8 @@
 ﻿using System;
+using System.IO;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
 
@@ -14,9 +16,17 @@ namespace FlexFlow.Api
         /// <param name="args">The command-line arguments.</param>
         public static void Main(string[] args)
         {
+            // Set up configuration files
+            IConfigurationRoot config = new ConfigurationBuilder()
+                .SetBasePath(Path.GetDirectoryName(typeof(Program).Assembly.Location))
+                .AddJsonFile("appsettings.json", false, true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            // Set up global logger configuration
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
-                .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning) // See "app.UseSerilogRequestLogging()" in Startup.cs
                 .Enrich.FromLogContext()
                 .WriteTo.Console()
                 .WriteTo.File("flexflow.log", rollingInterval: RollingInterval.Day)
@@ -29,8 +39,9 @@ namespace FlexFlow.Api
 
                 // Build and start the web host
                 IWebHostBuilder builder = WebHost.CreateDefaultBuilder(args)
-                    .UseStartup<Startup>()
-                    .UseSerilog();
+                    .UseConfiguration(config)
+                    .UseSerilog()
+                    .UseStartup<Startup>();
 
                 IWebHost webHost = builder.Build();
                 webHost.Run();

@@ -5,24 +5,29 @@ using FlexFlow.Api.Identity.TokenProviders;
 using FlexFlow.Data.Entities;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace FlexFlow.Api
 {
     public class Startup
     {
-        private readonly ILogger _logger;
+        private readonly ILogger<Startup> _logger;
+        private IConfiguration _config;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:FlexFlow.Api.Startup"/> class.
         /// </summary>
         /// <param name="logger">The class logger.</param>
-        public Startup(ILogger<Startup> logger)
+        public Startup(ILogger<Startup> logger, IConfiguration config)
         {
             _logger = logger;
+            _config = config;
         }
 
         /// <summary>
@@ -32,15 +37,14 @@ namespace FlexFlow.Api
         /// the application via dependency injection.</param>
         public void ConfigureServices(IServiceCollection services)
         {
-            _logger.LogInformation("Configuring...");
-
             _logger.LogInformation("Configuring database...");
+
             // Add a database context pool. Contexts injected into controllers will be instances made available by the
             // pool and reused if necessary.
             services.AddDbContextPool<FlexFlowContext>(options =>
             {
                 // Use SQLite for the database.
-                string sqliteDbName = "FlexFlow.db";
+                string sqliteDbName = _config[Constants.CONFIG_SQLITEDATABASE];
 
                 _logger.LogInformation("Setting SQLite to use the database {DbName}...", sqliteDbName);
                 options.UseSqlite($"Filename={sqliteDbName}");
@@ -52,16 +56,13 @@ namespace FlexFlow.Api
             services
                 .AddIdentity<User, UserRole>(options =>
                 {
-                    // Password options
-                    options.Password.RequireUppercase = false;
-                    options.Password.RequireLowercase = false;
-                    options.Password.RequireNonAlphanumeric = false;
-                    options.Password.RequireDigit = false;
-                    options.Password.RequiredLength = 5;
-                    options.Password.RequiredUniqueChars = 1;
-
                     // Require a confirmed email
                     options.SignIn.RequireConfirmedEmail = true;
+
+                    // Set lockout options
+                    options.Lockout.AllowedForNewUsers = true;
+                    options.Lockout.MaxFailedAccessAttempts = 5;
+                    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
 
                     // Token providers (these are just the names of the ones we are using, they will be added below
                     // and configured later)
@@ -73,6 +74,16 @@ namespace FlexFlow.Api
                 // Add token providers
                 .AddTokenProvider<EmailConfirmationTokenProvider>(nameof(EmailConfirmationTokenProvider))
                 .AddTokenProvider<PasswordResetTokenProvider>(nameof(PasswordResetTokenProvider));
+
+            // Set up cookie authentication
+            services.ConfigureApplicationCookie(options =>
+            {
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SameSite = SameSiteMode.Strict;
+
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+                options.SlidingExpiration = true;
+            });
 
             // Configure the token providers added earlier
             _logger.LogInformation("Configuring ASP.NET Core Identity token providers...");
@@ -88,7 +99,7 @@ namespace FlexFlow.Api
                     options.TokenLifespan = TimeSpan.FromHours(1);
                 });
             _logger.LogInformation("Identity configured.");
-
+            
             services.AddMvc();
         }
 
@@ -111,11 +122,10 @@ namespace FlexFlow.Api
                 app.UseDeveloperExceptionPage();
             }
 
-            // Set up cookie auth
-            _logger.LogInformation("Configuring authentication middleware...");
-            app.UseCookiePolicy();
             app.UseAuthentication();
-            _logger.LogInformation("Authentication middleware configured.");
+
+            // Condenses ASP.NET Core's logs into a single line instead of 5+ lines for every single API request
+            app.UseSerilogRequestLogging();
 
             // Configure database
             _logger.LogInformation("Configuring the database...");
@@ -143,15 +153,20 @@ namespace FlexFlow.Api
             {
                 _logger.LogInformation("Administrator user does not exist. Attempting to create it...");
 
-                IdentityResult result = await userManager.CreateAsync(new User
+                User admin = new User
                 {
                     UserName = "admin",
-                    DisplayName = "Administrator"
-                }, "admin");
+                    DisplayName = "Administrator",
+                    Email = _config[Constants.CONFIG_ADMINEMAIL]
+                };
+
+                IdentityResult result = await userManager.CreateAsync(admin, "admin");
 
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("Administrator user created successfully.");
+                    string emailToken = await userManager.GenerateEmailConfirmationTokenAsync(admin);
+                    await userManager.ConfirmEmailAsync(admin, emailToken);
                 }
                 else
                 {
