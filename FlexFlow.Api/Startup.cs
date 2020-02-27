@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using FlexFlow.Api.Database;
-using FlexFlow.Api.Identity.TokenProviders;
 using FlexFlow.Data.Entities;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -10,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 
@@ -63,17 +63,9 @@ namespace FlexFlow.Api
                     options.Lockout.AllowedForNewUsers = true;
                     options.Lockout.MaxFailedAccessAttempts = 5;
                     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
-
-                    // Token providers (these are just the names of the ones we are using, they will be added below
-                    // and configured later)
-                    options.Tokens.EmailConfirmationTokenProvider = nameof(EmailConfirmationTokenProvider);
-                    options.Tokens.PasswordResetTokenProvider = nameof(PasswordResetTokenProvider);
                 })
                 // Store users and various Identity information in the FlexFlow database context
-                .AddEntityFrameworkStores<FlexFlowContext>()
-                // Add token providers
-                .AddTokenProvider<EmailConfirmationTokenProvider>(nameof(EmailConfirmationTokenProvider))
-                .AddTokenProvider<PasswordResetTokenProvider>(nameof(PasswordResetTokenProvider));
+                .AddEntityFrameworkStores<FlexFlowContext>();
 
             // Set up cookie authentication
             services.ConfigureApplicationCookie(options =>
@@ -84,21 +76,6 @@ namespace FlexFlow.Api
                 options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
                 options.SlidingExpiration = true;
             });
-
-            // Configure the token providers added earlier
-            _logger.LogInformation("Configuring ASP.NET Core Identity token providers...");
-            services
-                .Configure<EmailConfirmationTokenProviderOptions>(options =>
-                {
-                    // Expire the email confirmation token after 1 day
-                    options.TokenLifespan = TimeSpan.FromDays(1);
-                })
-                .Configure<PasswordResetTokenProviderOptions>(options =>
-                {
-                    // Expire the password reset token after 1 hour
-                    options.TokenLifespan = TimeSpan.FromHours(1);
-                });
-            _logger.LogInformation("Identity configured.");
             
             services.AddMvc();
         }
@@ -112,7 +89,7 @@ namespace FlexFlow.Api
         /// <param name="ctx">The database context.</param>
         public void Configure(
             IApplicationBuilder app, 
-            IHostingEnvironment env,
+            IWebHostEnvironment env,
             UserManager<User> userManager,
             FlexFlowContext ctx)
         {
@@ -131,8 +108,6 @@ namespace FlexFlow.Api
             _logger.LogInformation("Configuring the database...");
             ConfigureDatabaseAndSeedUsers(ctx, userManager).Wait();
             _logger.LogInformation("Database configured and contactable.");
-
-            app.UseMvc();
         }
 
         /// <summary>

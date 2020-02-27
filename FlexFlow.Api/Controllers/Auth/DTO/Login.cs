@@ -19,6 +19,16 @@
         /// True if the login should be persistent across browser sessions.
         /// </summary>
         public bool RememberMe { get; set; }
+
+        /// <summary>
+        /// The two-factor authentication token.
+        /// </summary>
+        public string TwoFactorToken { get; set; }
+
+        /// <summary>
+        /// Whether or not this device should be remembered for two-factor authentication.
+        /// </summary>
+        public bool TwoFactorRememberMachine { get; set; }
     }
 
     /// <summary>
@@ -35,11 +45,6 @@
         /// The display name of the user that just logged in.
         /// </summary>
         public string DisplayName { get; set; }
-
-        /// <summary>
-        /// True if the user needs to supply a two-factor authenticator key to continue the login process.
-        /// </summary>
-        public bool RequiresTwoFactorAuthenticatorKey { get; set; }
 
         /// <summary>
         /// True if the email for this user requires validation.
