@@ -1,31 +1,38 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using FlexFlow.Api.Controllers.Auth.DTO;
+﻿using FlexFlow.Api.Controllers.Auth.DTO;
+using FlexFlow.Api.Identity.JsonWebTokens;
 using FlexFlow.Data.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using SignInResult = Microsoft.AspNetCore.Identity.SignInResult;
 
 namespace FlexFlow.Api.Controllers.Auth
 {
     [Route("api/auth")]
-    public class AuthController : FlexFlowController
+    public class AuthController : FlexFlowControllerBase
     {
         private ILogger<AuthController> _logger;
         private UserManager<User> _userManager;
         private SignInManager<User> _signInManager;
+        private readonly IJwtTokenManager _tokenManager;
+        private readonly ICurrentJwtTokenManager _currentTokenManager;
 
         public AuthController(
             ILogger<AuthController> logger,
             UserManager<User> userManager,
-            SignInManager<User> signInManager)
+            SignInManager<User> signInManager,
+            IJwtTokenManager tokenManager,
+            ICurrentJwtTokenManager currentTokenManager)
         {
             _logger = logger;
             _userManager = userManager;
             _signInManager = signInManager;
+            _tokenManager = tokenManager;
+            _currentTokenManager = currentTokenManager;
         }
 
         /// <summary>
@@ -81,10 +88,13 @@ namespace FlexFlow.Api.Controllers.Auth
                 }
                 else if (signInResult.Succeeded)
                 {
+                    IList<string> roles = await _userManager.GetRolesAsync(user);
+
                     result = Ok(new LoginResponse
                     {
                         DisplayName = user.DisplayName,
                         UserId = user.Id,
+                        Token = await _tokenManager.GenerateTokenAsync(user.UserName, user.Email, roles),
                         // Also return a flag telling the user that their email is not validated if that's the case.
                         RequiresEmailValidation = !(emailConfirmed)
                     });
@@ -117,6 +127,9 @@ namespace FlexFlow.Api.Controllers.Auth
         {
             // Sign out the user.
             await _signInManager.SignOutAsync();
+
+            // Blacklist their JWT token
+            await _currentTokenManager.BlacklistAsync();
         }
 
         /// <summary>

@@ -12,14 +12,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="wwwroot\" />
-    <Folder Include="Identity\" />
-    <Folder Include="Database\" />
-    <Folder Include="Controllers\" />
-    <Folder Include="Controllers\Auth\" />
-    <Folder Include="Controllers\Auth\DTO\" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.2" />
     <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="3.1.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="3.1.2" />

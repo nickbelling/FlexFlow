@@ -19,8 +19,10 @@ namespace FlexFlow.Api
             // Set up configuration files
             IConfigurationRoot config = new ConfigurationBuilder()
                 .SetBasePath(Path.GetDirectoryName(typeof(Program).Assembly.Location))
+                // Use appsettings.json file
                 .AddJsonFile("appsettings.json", false, true)
-                .AddEnvironmentVariables()
+                // Allow override using environment variables
+                .AddEnvironmentVariables("FlexFlow")
                 .Build();
 
             // Set up global logger configuration

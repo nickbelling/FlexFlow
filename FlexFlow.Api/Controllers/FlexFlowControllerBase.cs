@@ -8,7 +8,7 @@ namespace FlexFlow.Api.Controllers
     /// automatic, resulting in less boilerplate.
     /// </summary>
     [ApiController]
-    public class FlexFlowController : ControllerBase
+    public class FlexFlowControllerBase : ControllerBase
     {
     }
 }

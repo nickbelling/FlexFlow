@@ -1,17 +1,22 @@
-﻿using System;
-using System.Threading.Tasks;
-using FlexFlow.Api.Database;
+﻿using FlexFlow.Api.Database;
+using FlexFlow.Api.Identity.JsonWebTokens;
 using FlexFlow.Data.Entities;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using System;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace FlexFlow.Api
 {
@@ -37,47 +42,13 @@ namespace FlexFlow.Api
         /// the application via dependency injection.</param>
         public void ConfigureServices(IServiceCollection services)
         {
-            _logger.LogInformation("Configuring database...");
+            // Add app-specific services
+            AddDatabaseServices(services);
+            AddIdentityServices(services);
+            AddJwtServices(services);
 
-            // Add a database context pool. Contexts injected into controllers will be instances made available by the
-            // pool and reused if necessary.
-            services.AddDbContextPool<FlexFlowContext>(options =>
-            {
-                // Use SQLite for the database.
-                string sqliteDbName = _config[Constants.CONFIG_SQLITEDATABASE];
-
-                _logger.LogInformation("Setting SQLite to use the database {DbName}...", sqliteDbName);
-                options.UseSqlite($"Filename={sqliteDbName}");
-            });
-            _logger.LogInformation("Database configured.");
-
-            // Add ASP.NET Core Identity for user and user role management.
-            _logger.LogInformation("Configuring ASP.NET Core Identity...");
-            services
-                .AddIdentity<User, UserRole>(options =>
-                {
-                    // Require a confirmed email
-                    options.SignIn.RequireConfirmedEmail = true;
-
-                    // Set lockout options
-                    options.Lockout.AllowedForNewUsers = true;
-                    options.Lockout.MaxFailedAccessAttempts = 5;
-                    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
-                })
-                // Store users and various Identity information in the FlexFlow database context
-                .AddEntityFrameworkStores<FlexFlowContext>();
-
-            // Set up cookie authentication
-            services.ConfigureApplicationCookie(options =>
-            {
-                options.Cookie.HttpOnly = true;
-                options.Cookie.SameSite = SameSiteMode.Strict;
-
-                options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
-                options.SlidingExpiration = true;
-            });
-            
-            services.AddMvc();
+            services.AddAuthorization();
+            services.AddControllers();
         }
 
         /// <summary>
@@ -99,7 +70,12 @@ namespace FlexFlow.Api
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseAuthentication();
+            // Set up the ASP.NET Core routing, auth, middleware and set it up to find the Controllers
+            app.UseRouting()
+               .UseAuthentication()
+               .UseAuthorization()
+               .UseMiddleware<JwtTokenManagerMiddleware>()
+               .UseEndpoints(configure => configure.MapControllers());
 
             // Condenses ASP.NET Core's logs into a single line instead of 5+ lines for every single API request
             app.UseSerilogRequestLogging();
@@ -108,6 +84,107 @@ namespace FlexFlow.Api
             _logger.LogInformation("Configuring the database...");
             ConfigureDatabaseAndSeedUsers(ctx, userManager).Wait();
             _logger.LogInformation("Database configured and contactable.");
+        }
+
+        /// <summary>
+        /// Adds the EF Database. It will be configured later.
+        /// </summary>
+        /// <param name="services"></param>
+        private void AddDatabaseServices(IServiceCollection services)
+        {
+            _logger.LogInformation("Configuring database...");
+            // Add a database context pool. Contexts injected into controllers will be instances made available by the
+            // pool and reused if necessary.
+            services.AddDbContextPool<FlexFlowContext>(options =>
+            {
+                // Use SQLite for the database.
+                string sqliteDbName = _config[Constants.Config.SQLITE_DATABASE];
+
+                _logger.LogInformation("Setting SQLite to use the database {DbName}...", sqliteDbName);
+                options.UseSqlite($"Filename={sqliteDbName}");
+            });
+            _logger.LogInformation("Database configured.");
+        }
+
+        /// <summary>
+        /// Configures the Identity provider, and ensures it's using sensible defaults.
+        /// </summary>
+        /// <param name="services"></param>
+        private void AddIdentityServices(IServiceCollection services)
+        {
+            // Add ASP.NET Core Identity for user and user role management.
+            _logger.LogInformation("Configuring ASP.NET Core Identity...");
+            services
+                .AddIdentity<User, UserRole>(options =>
+                {
+                    // Require a confirmed email
+                    options.SignIn.RequireConfirmedEmail = true;
+
+                    // Remove all of the dumb default restrictions that are on Identity passwords
+                    options.Password.RequiredLength = 0;
+                    options.Password.RequireDigit = false;
+                    options.Password.RequireNonAlphanumeric = false;
+                    options.Password.RequireUppercase = false;
+
+                    // Set lockout options
+                    options.Lockout.AllowedForNewUsers = true;
+                    options.Lockout.MaxFailedAccessAttempts = 5;
+                    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
+                })
+                // Store users and various Identity information in the FlexFlow database context
+                .AddEntityFrameworkStores<FlexFlowContext>()
+                // Using our own Identity options means the Default Token Providers aren't used; add them back
+                // TODO - maybe replace these with our own again
+                .AddDefaultTokenProviders();
+        }
+
+        /// <summary>
+        /// Configures the JWT middleware.
+        /// </summary>
+        /// <param name="services"></param>
+        private void AddJwtServices(IServiceCollection services)
+        {
+            // Memory cache used for storing blacklisted tokens
+            services.AddSingleton<IMemoryCache, MemoryCache>();
+
+            // HTTP Context Accessor used by the TokenManagerMiddleware to get the token out and check it against the blacklist
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+            // TokenManager is singleton (one for the entire process), CurrentTokenManager is transient (one per request)
+            services.AddSingleton<IJwtTokenManager, JwtTokenManager>();
+            services.AddTransient<ICurrentJwtTokenManager, CurrentJwtTokenManager>();
+
+            // Add the middleware that validates the tokens
+            services.AddTransient<JwtTokenManagerMiddleware>();
+
+            // Pull the JWT signing key secret from the config
+            string secret = _config[Constants.Config.BEARER_SECRET];
+            byte[] key = Encoding.UTF8.GetBytes(secret);
+
+            // Set up JWT
+            services.AddAuthentication(x =>
+            {
+                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(x =>
+            {
+                x.RequireHttpsMetadata = false;
+                x.SaveToken = true;
+                x.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero,
+                    RequireSignedTokens = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateActor = false,
+                    ValidateIssuer = true,
+                    ValidIssuer = _config[Constants.Config.BEARER_ISSUER],
+                    ValidateAudience = true,
+                    ValidAudience = _config[Constants.Config.BEARER_AUDIENCE]
+                };
+            });
         }
 
         /// <summary>
@@ -132,7 +209,7 @@ namespace FlexFlow.Api
                 {
                     UserName = "admin",
                     DisplayName = "Administrator",
-                    Email = _config[Constants.CONFIG_ADMINEMAIL]
+                    Email = _config[Constants.Config.ADMIN_EMAIL]
                 };
 
                 IdentityResult result = await userManager.CreateAsync(admin, "admin");

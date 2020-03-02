@@ -21,12 +21,12 @@
         public bool RememberMe { get; set; }
 
         /// <summary>
-        /// The two-factor authentication token.
+        /// The two-factor authentication token (if the user is logging in with 2FA).
         /// </summary>
         public string TwoFactorToken { get; set; }
 
         /// <summary>
-        /// Whether or not this device should be remembered for two-factor authentication.
+        /// Whether or not this device should be remembered for two-factor authentication (if the user is logging in with 2FA).
         /// </summary>
         public bool TwoFactorRememberMachine { get; set; }
     }
@@ -50,5 +50,10 @@
         /// True if the email for this user requires validation.
         /// </summary>
         public bool RequiresEmailValidation { get; set; }
+
+        /// <summary>
+        /// The JSON Web Token (JWT) to use for this login session.
+        /// </summary>
+        public string Token { get; set; }
     }
 }
