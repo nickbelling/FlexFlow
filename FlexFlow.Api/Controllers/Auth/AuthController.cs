@@ -12,6 +12,9 @@ using SignInResult = Microsoft.AspNetCore.Identity.SignInResult;
 
 namespace FlexFlow.Api.Controllers.Auth
 {
+    /// <summary>
+    /// Exposes endpoints for logging in/out, changing passwords, two-factor authentication, etc.
+    /// </summary>
     [Route("api/auth")]
     public class AuthController : FlexFlowControllerBase
     {
@@ -21,6 +24,14 @@ namespace FlexFlow.Api.Controllers.Auth
         private readonly IJwtTokenManager _tokenManager;
         private readonly ICurrentJwtTokenManager _currentTokenManager;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <param name="userManager"></param>
+        /// <param name="signInManager"></param>
+        /// <param name="tokenManager"></param>
+        /// <param name="currentTokenManager"></param>
         public AuthController(
             ILogger<AuthController> logger,
             UserManager<User> userManager,
@@ -72,7 +83,15 @@ namespace FlexFlow.Api.Controllers.Auth
 
                         if (signInResult.Succeeded)
                         {
-                            result = Ok();
+                            IList<string> roles = await _userManager.GetRolesAsync(user);
+
+                            result = new LoginResponse
+                            {
+                                DisplayName = user.DisplayName,
+                                UserId = user.Id,
+                                Token = await _tokenManager.GenerateTokenAsync(user.UserName, user.Email, roles),
+                                RequiresEmailValidation = false // Can't have 2fa turned on if email isn't validated
+                            };
                         }
                         else
                         {
@@ -90,14 +109,14 @@ namespace FlexFlow.Api.Controllers.Auth
                 {
                     IList<string> roles = await _userManager.GetRolesAsync(user);
 
-                    result = Ok(new LoginResponse
+                    result = new LoginResponse
                     {
                         DisplayName = user.DisplayName,
                         UserId = user.Id,
                         Token = await _tokenManager.GenerateTokenAsync(user.UserName, user.Email, roles),
                         // Also return a flag telling the user that their email is not validated if that's the case.
                         RequiresEmailValidation = !(emailConfirmed)
-                    });
+                    };
                 }
                 else
                 {

@@ -8,6 +8,9 @@ using Serilog.Events;
 
 namespace FlexFlow.Api
 {
+    /// <summary>
+    /// The entry class of the program.
+    /// </summary>
     public class Program
     {
         /// <summary>

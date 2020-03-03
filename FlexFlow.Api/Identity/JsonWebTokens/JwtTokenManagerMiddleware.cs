@@ -13,6 +13,11 @@ namespace FlexFlow.Api.Identity.JsonWebTokens
         private readonly ILogger _logger;
         private readonly ICurrentJwtTokenManager _tokenManager;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <param name="tokenManager"></param>
         public JwtTokenManagerMiddleware(
             ILogger<JwtTokenManagerMiddleware> logger,
             ICurrentJwtTokenManager tokenManager)
@@ -21,6 +26,7 @@ namespace FlexFlow.Api.Identity.JsonWebTokens
             _tokenManager = tokenManager;
         }
 
+        /// <inheritdoc />
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
             if ( await _tokenManager.IsBlacklistedAsync() )

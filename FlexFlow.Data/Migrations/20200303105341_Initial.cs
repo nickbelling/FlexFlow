@@ -1,7 +1,8 @@
-﻿using System;
+﻿#pragma warning disable 1591
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace FlexFlow.Api.Migrations
+namespace FlexFlow.Data.Migrations
 {
     public partial class Initial : Migration
     {
@@ -41,7 +42,8 @@ namespace FlexFlow.Api.Migrations
                     TwoFactorEnabled = table.Column<bool>(nullable: false),
                     LockoutEnd = table.Column<DateTimeOffset>(nullable: true),
                     LockoutEnabled = table.Column<bool>(nullable: false),
-                    AccessFailedCount = table.Column<int>(nullable: false)
+                    AccessFailedCount = table.Column<int>(nullable: false),
+                    DisplayName = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
                 {
@@ -217,3 +219,5 @@ namespace FlexFlow.Api.Migrations
         }
     }
 }
+
+#pragma warning restore 1591

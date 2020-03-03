@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using FlexFlow.Common;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -22,6 +23,11 @@ namespace FlexFlow.Api.Identity.JsonWebTokens
         private readonly string _audience;
         private readonly string _issuer;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="config"></param>
+        /// <param name="cache"></param>
         public JwtTokenManager(IConfiguration config, IMemoryCache cache)
         {
             _config = config;
@@ -43,6 +49,7 @@ namespace FlexFlow.Api.Identity.JsonWebTokens
             }
         }
 
+        /// <inheritdoc />
         public Task<string> GenerateTokenAsync(string username, string email, IList<string> roles)
         {
             // Create the token descriptor
@@ -62,12 +69,14 @@ namespace FlexFlow.Api.Identity.JsonWebTokens
             return Task.FromResult(_tokenHandler.WriteToken(token));
         }
 
+        /// <inheritdoc />
         public Task<bool> IsBlacklistedAsync(string token)
         {
             bool isInBlacklistCache = _cache.Get(GetBlacklistKey(token)) != null;
             return Task.FromResult(isInBlacklistCache);
         }
 
+        /// <inheritdoc />
         public Task BlacklistAsync(string token)
         {
             // Add this token to the Blacklist cache. It's storing a regular object (that'll never be accessed; it's more about storing *something*).

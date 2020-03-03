@@ -11,17 +11,24 @@ namespace FlexFlow.Api.Identity.JsonWebTokens
         private readonly IHttpContextAccessor _httpContext;
         private readonly IJwtTokenManager _tokenManager;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="httpContext"></param>
+        /// <param name="tokenManager"></param>
         public CurrentJwtTokenManager(IHttpContextAccessor httpContext, IJwtTokenManager tokenManager)
         {
             _httpContext = httpContext;
             _tokenManager = tokenManager;
         }
 
+        /// <inheritdoc />
         public async Task<bool> IsBlacklistedAsync()
         {
             return await _tokenManager.IsBlacklistedAsync(GetCurrentAuthTokenAsync());
         }
 
+        /// <inheritdoc />
         public async Task BlacklistAsync()
         {
             await _tokenManager.BlacklistAsync(GetCurrentAuthTokenAsync());

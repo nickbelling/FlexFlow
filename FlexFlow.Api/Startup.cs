@@ -1,5 +1,6 @@
-﻿using FlexFlow.Api.Database;
-using FlexFlow.Api.Identity.JsonWebTokens;
+﻿using FlexFlow.Api.Identity.JsonWebTokens;
+using FlexFlow.Common;
+using FlexFlow.Data.Database;
 using FlexFlow.Data.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -20,6 +21,9 @@ using System.Threading.Tasks;
 
 namespace FlexFlow.Api
 {
+    /// <summary>
+    /// The class used to start up the web server, the dependency injection container, and register all of the required services.
+    /// </summary>
     public class Startup
     {
         private readonly ILogger<Startup> _logger;
@@ -28,7 +32,8 @@ namespace FlexFlow.Api
         /// <summary>
         /// Initializes a new instance of the <see cref="T:FlexFlow.Api.Startup"/> class.
         /// </summary>
-        /// <param name="logger">The class logger.</param>
+        /// <param name="logger"></param>
+        /// <param name="config"></param>
         public Startup(ILogger<Startup> logger, IConfiguration config)
         {
             _logger = logger;
@@ -49,6 +54,8 @@ namespace FlexFlow.Api
 
             services.AddAuthorization();
             services.AddControllers();
+
+            services.AddOpenApiDocument();
         }
 
         /// <summary>
@@ -84,6 +91,15 @@ namespace FlexFlow.Api
             _logger.LogInformation("Configuring the database...");
             ConfigureDatabaseAndSeedUsers(ctx, userManager).Wait();
             _logger.LogInformation("Database configured and contactable.");
+
+            // Add Swagger document middlewares
+            app.UseOpenApi(options => options.Path = "/openapi.json");
+
+            app.UseReDoc(options =>
+            {
+                options.Path = "/redoc";
+                options.DocumentPath = "/openapi.json";
+            });
         }
 
         /// <summary>

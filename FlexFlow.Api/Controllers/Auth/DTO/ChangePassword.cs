@@ -1,5 +1,8 @@
 ﻿namespace FlexFlow.Api.Controllers.Auth.DTO
 {
+    /// <summary>
+    /// Allows a user to change their password.
+    /// </summary>
     public class ChangePasswordRequest
     {
         /// <summary>

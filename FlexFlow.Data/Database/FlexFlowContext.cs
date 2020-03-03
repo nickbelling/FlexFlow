@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace FlexFlow.Api.Database
+namespace FlexFlow.Data.Database
 {
     /// <summary>
     /// The FlexFlow database context. Note that this inherits from <see cref="IdentityDbContext"/> as opposed to the regular EF <see cref="DbContext"/>.
@@ -10,6 +10,10 @@ namespace FlexFlow.Api.Database
     /// </summary>
     public class FlexFlowContext : IdentityDbContext<User, UserRole, int>
     {
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="options"></param>
         public FlexFlowContext(DbContextOptions<FlexFlowContext> options)
             : base(options)
         { }
