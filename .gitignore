@@ -1,6 +1,7 @@
 *.db
 *.db-journal
 *.log
+*.xml
 
 # Autosave files
 *~

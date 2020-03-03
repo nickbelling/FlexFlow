@@ -1,9 +1,20 @@
-
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexFlow.Data", "FlexFlow.Data\FlexFlow.Data.csproj", "{95E04FAD-DD6D-4D23-9E22-99EB9A1C0D61}"
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29806.167
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FlexFlow.Data", "FlexFlow.Data\FlexFlow.Data.csproj", "{95E04FAD-DD6D-4D23-9E22-99EB9A1C0D61}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexFlow.Api", "FlexFlow.Api\FlexFlow.Api.csproj", "{580A14BF-3EE7-4BBA-BA81-77DB721FF46F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FlexFlow.Api", "FlexFlow.Api\FlexFlow.Api.csproj", "{580A14BF-3EE7-4BBA-BA81-77DB721FF46F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexFlow.Common", "FlexFlow.Common\FlexFlow.Common.csproj", "{14FB996A-766D-4754-9A87-DF0E7E41435D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{66FB0325-5780-46BA-8415-69BF706C6910}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexFlow.Tests", "FlexFlow.Tests\FlexFlow.Tests.csproj", "{1117EC2F-DCE1-450E-BA64-3FBAD7B247BE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,5 +30,19 @@ Global
 		{580A14BF-3EE7-4BBA-BA81-77DB721FF46F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{580A14BF-3EE7-4BBA-BA81-77DB721FF46F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{580A14BF-3EE7-4BBA-BA81-77DB721FF46F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14FB996A-766D-4754-9A87-DF0E7E41435D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14FB996A-766D-4754-9A87-DF0E7E41435D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14FB996A-766D-4754-9A87-DF0E7E41435D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14FB996A-766D-4754-9A87-DF0E7E41435D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1117EC2F-DCE1-450E-BA64-3FBAD7B247BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1117EC2F-DCE1-450E-BA64-3FBAD7B247BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1117EC2F-DCE1-450E-BA64-3FBAD7B247BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1117EC2F-DCE1-450E-BA64-3FBAD7B247BE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3F814A7F-1567-483A-9725-6843F63F8199}
 	EndGlobalSection
 EndGlobal
